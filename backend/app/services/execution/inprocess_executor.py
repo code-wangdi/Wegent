@@ -278,11 +278,17 @@ class InprocessExecutor:
         request: ExecutionRequest,
         emitter: ResultEmitter,
     ) -> None:
-        """Execute task in-process.
+        """Execute one standalone task inside the backend process.
 
         Args:
             request: Execution request
             emitter: Result emitter for event emission
+
+        Raises:
+            RuntimeError: When agent creation fails or the in-process lifecycle
+                returns a terminal failure status. The exception is re-raised
+                after emitting an error event so outer dispatcher layers can
+                keep their normal failure handling.
         """
         logger.info(
             f"[InprocessExecutor] Starting in-process execution: "
@@ -381,17 +387,19 @@ class InprocessExecutor:
         self,
         agent,
     ) -> tuple:
-        """Execute agent asynchronously in the current event loop.
+        """Run the agent lifecycle in the current event loop.
 
-        This method handles the agent lifecycle (pre_execute, execute, post_execute)
-        similar to Agent.handle(), but uses async methods to stay in the current
-        event loop.
+        This mirrors ``Agent.handle()`` for standalone mode by awaiting
+        ``pre_execute()`` and then using ``execute_async()`` when available.
+        It returns a ``FAILED`` status tuple instead of raising so ``execute()``
+        can centralize frontend error emission and dispatcher propagation.
 
         Args:
             agent: The agent instance to execute
 
         Returns:
-            Tuple of (TaskStatus, error_message)
+            Tuple of ``(TaskStatus, error_message)`` where ``error_message`` is
+            populated only for failure states.
         """
         from shared.status import TaskStatus
 
