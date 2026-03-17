@@ -11,7 +11,7 @@ from shared.status import TaskStatus
 
 
 @pytest.mark.asyncio
-async def test_execute_passes_execution_request_to_agent_service():
+async def test_execute_passes_execution_request_to_agent_service() -> None:
     request = ExecutionRequest(task_id=1, subtask_id=2, message_id=3)
     emitter = AsyncMock()
     executor = InprocessExecutor()
@@ -46,7 +46,7 @@ async def test_execute_passes_execution_request_to_agent_service():
 
 
 @pytest.mark.asyncio
-async def test_execute_agent_async_awaits_pre_execute_and_skips_missing_post_execute():
+async def test_execute_agent_async_awaits_pre_execute_and_skips_missing_post_execute() -> None:
     executor = InprocessExecutor()
     agent = SimpleNamespace(
         task_id=3,
@@ -64,7 +64,27 @@ async def test_execute_agent_async_awaits_pre_execute_and_skips_missing_post_exe
 
 
 @pytest.mark.asyncio
-async def test_execute_raises_and_emits_error_when_agent_lifecycle_returns_failed():
+async def test_execute_agent_async_returns_failed_when_pre_execute_fails() -> None:
+    executor = InprocessExecutor()
+    agent = SimpleNamespace(
+        task_id=4,
+        get_name=lambda: "fake-agent",
+        pre_execute=AsyncMock(return_value=(TaskStatus.FAILED, "boom")),
+        execute_async=AsyncMock(),
+    )
+
+    status, error = await executor._execute_agent_async(agent)
+
+    assert status == TaskStatus.FAILED
+    assert error is not None
+    assert "Pre-execute failed" in error
+    assert "boom" in error
+    agent.pre_execute.assert_awaited_once()
+    agent.execute_async.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_execute_raises_and_emits_error_when_agent_lifecycle_returns_failed() -> None:
     request = ExecutionRequest(task_id=10, subtask_id=11, message_id=12)
     emitter = AsyncMock()
     executor = InprocessExecutor()
