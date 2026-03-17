@@ -12,6 +12,7 @@ from shared.status import TaskStatus
 
 @pytest.mark.asyncio
 async def test_execute_passes_execution_request_to_agent_service() -> None:
+    """Pass an ExecutionRequest object directly to AgentService."""
     request = ExecutionRequest(task_id=1, subtask_id=2, message_id=3)
     emitter = AsyncMock()
     executor = InprocessExecutor()
@@ -47,6 +48,7 @@ async def test_execute_passes_execution_request_to_agent_service() -> None:
 
 @pytest.mark.asyncio
 async def test_execute_agent_async_awaits_pre_execute_and_skips_missing_post_execute() -> None:
+    """Await async lifecycle hooks without requiring post_execute()."""
     executor = InprocessExecutor()
     agent = SimpleNamespace(
         task_id=3,
@@ -65,6 +67,7 @@ async def test_execute_agent_async_awaits_pre_execute_and_skips_missing_post_exe
 
 @pytest.mark.asyncio
 async def test_execute_agent_async_returns_failed_when_pre_execute_fails() -> None:
+    """Return FAILED when pre_execute reports a failure status."""
     executor = InprocessExecutor()
     agent = SimpleNamespace(
         task_id=4,
@@ -85,6 +88,7 @@ async def test_execute_agent_async_returns_failed_when_pre_execute_fails() -> No
 
 @pytest.mark.asyncio
 async def test_execute_raises_and_emits_error_when_agent_lifecycle_returns_failed() -> None:
+    """Raise and emit an error when the agent lifecycle returns FAILED."""
     request = ExecutionRequest(task_id=10, subtask_id=11, message_id=12)
     emitter = AsyncMock()
     executor = InprocessExecutor()
